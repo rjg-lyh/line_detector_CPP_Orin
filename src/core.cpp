@@ -80,7 +80,7 @@ int runCamera(nvinfer1::IExecutionContext *model, cv::Size resize_scale, size_t 
         // control code
         //********************
         imshow("camera-frame", frame);
-        printf("dot1: (%.1f, %.1f)  dot2: (%.1f, %.1f)\n\n",
+        printf("dot1: (%d, %d)  dot2: (%d, %d)\n\n",
                pair_dots.first.x, pair_dots.first.y, 
                pair_dots.second.x, pair_dots.second.y);
         char c = waitKey(1);
