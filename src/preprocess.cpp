@@ -87,7 +87,7 @@ float* warpaffine_and_normalize_float(const Mat& image, const Size& size){
 }
 
 
-float* warpaffine_and_normalize_best(const Mat& image, const Size& size){
+float* warpaffine_and_normalize_best_info(const Mat& image, const Size& size){
     size_t src_size = image.cols * image.rows * 3;
     size_t dst_size = size.width * size.height * 3;
 
@@ -119,6 +119,36 @@ float* warpaffine_and_normalize_best(const Mat& image, const Size& size){
     clock.update();
     checkRuntime(cudaMemcpy(pdst_pin, pdst_device, dst_size*4, cudaMemcpyDeviceToHost)); // 将预处理完的数据搬运回来
     printInfo(clock.getTimeMilliSec(), 4, "搬运数据device to pinned", 1);
+
+    checkRuntime(cudaFree(psrc_device));
+    checkRuntime(cudaFree(pdst_device));
+    return pdst_pin;
+}
+
+float* warpaffine_and_normalize_best(const Mat& image, const Size& size){
+    size_t src_size = image.cols * image.rows * 3;
+    size_t dst_size = size.width * size.height * 3;
+
+    uint8_t* psrc_device = nullptr;
+    // float* pdst_host = new float[dst_size];
+    float* pdst_pin = nullptr;
+    float* pdst_device = nullptr;
+
+    checkRuntime(cudaMalloc(&psrc_device, src_size));
+    checkRuntime(cudaMalloc(&pdst_device, dst_size*4));
+    checkRuntime(cudaMallocHost(&pdst_pin, dst_size*4));
+    checkRuntime(cudaMemcpy(psrc_device, image.data, src_size, cudaMemcpyHostToDevice)); // 搬运数据到GPU上
+
+    warp_affine_bilinear_best(
+        psrc_device, image.cols * 3, image.cols, image.rows,
+        pdst_device, size.width * 3, size.width, size.height,
+        114
+    );
+
+    // 检查核函数执行是否存在错误
+    checkRuntime(cudaPeekAtLastError());
+
+    checkRuntime(cudaMemcpy(pdst_pin, pdst_device, dst_size*4, cudaMemcpyDeviceToHost)); // 将预处理完的数据搬运回来
 
     checkRuntime(cudaFree(psrc_device));
     checkRuntime(cudaFree(pdst_device));

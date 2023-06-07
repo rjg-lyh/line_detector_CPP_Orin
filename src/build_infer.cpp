@@ -28,7 +28,7 @@ void TRTLogger::log(Severity severity, nvinfer1::AsciiChar const* msg) noexcept 
 }
 
 // 上一节的代码
-bool build_model(char* model_name){
+bool build_model(const char* model_name){
     TRTLogger logger;
 
     // 这是基本需要的组件
@@ -105,7 +105,7 @@ vector<unsigned char> load_file(const string& file){
     return data;
 }
 
-PairThree* load_model(string path){
+PairThree* load_model(const string& path){
 
     PairThree* params = new PairThree;
     TRTLogger logger;
@@ -132,14 +132,14 @@ PairThree* load_model(string path){
     return params;
 }
 
-float* inference(nvinfer1::IExecutionContext* execution_context, float* input_data_pin, size_t input_data_size, size_t output_data_size){
+float* inference_info(nvinfer1::IExecutionContext* execution_context, float* input_data_pin, size_t input_data_size, size_t output_data_size){
 
     TimerClock clock;
 
     cudaStream_t stream = nullptr;
     cudaStreamCreate(&stream);
 
-    // ------------------------------ 2. 准备好要推理的数据并搬运到GPU   ----------------------------
+    // ------------------------------ 1. 准备好要推理的数据并搬运到GPU   ----------------------------
 
     // float* output_data_host = new float[output_data_size];
     float* output_data_pin = nullptr;
@@ -163,7 +163,7 @@ float* inference(nvinfer1::IExecutionContext* execution_context, float* input_da
     // 用一个指针数组指定input和output在gpu中的指针。
     float* bindings[] = {input_data_device, output_data_device};
 
-    // ------------------------------ 3. 推理并将结果搬运回CPU   ----------------------------
+    // ------------------------------ 2. 推理并将结果搬运回CPU   ----------------------------
     clock.update();
     bool success      = execution_context->enqueueV2((void**)bindings, stream, nullptr);
     printInfo(clock.getTimeMilliSec(), 4, "infer: 模型推理", 1);
@@ -173,11 +173,8 @@ float* inference(nvinfer1::IExecutionContext* execution_context, float* input_da
     printInfo(clock.getTimeMilliSec(), 4, "infer: 搬运数据device to pinned", 1);
     checkRuntime(cudaStreamSynchronize(stream));
     printInfo(clock.getTimeMilliSec(), 6, "infer: 等待异步统一", 1);
-    // checkRuntime(cudaMemcpy(output_data_host, output_data_device, size_out, cudaMemcpyDeviceToHost));
 
-    //printf("output_data_host = %f, %f\n", output_data_host[0], output_data_host[1]);
-
-    // ------------------------------ 4. 释放内存 ----------------------------
+    // ------------------------------ 3. 释放内存 ----------------------------
     checkRuntime(cudaStreamDestroy(stream));
     checkRuntime(cudaFree(input_data_device));
     checkRuntime(cudaFree(output_data_device));
@@ -185,3 +182,47 @@ float* inference(nvinfer1::IExecutionContext* execution_context, float* input_da
 
     return output_data_pin;
 }
+
+
+float* inference(nvinfer1::IExecutionContext* execution_context, float* input_data_pin, size_t input_data_size, size_t output_data_size){
+
+    cudaStream_t stream = nullptr;
+    cudaStreamCreate(&stream);
+
+    // ------------------------------ 1. 准备好要推理的数据并搬运到GPU   ----------------------------
+
+    // float* output_data_host = new float[output_data_size];
+    float* output_data_pin = nullptr;
+    float* input_data_device = nullptr;
+    float* output_data_device = nullptr;
+    
+    size_t size_in = input_data_size*sizeof(float);
+    size_t size_out = output_data_size*sizeof(float);
+
+
+    checkRuntime(cudaMalloc(&input_data_device, size_in));
+    checkRuntime(cudaMalloc(&output_data_device, size_out));
+    checkRuntime(cudaMallocHost(&output_data_pin, size_out));
+
+    checkRuntime(cudaMemcpyAsync(input_data_device, input_data_pin, size_in, cudaMemcpyHostToDevice, stream));
+
+
+    // 用一个指针数组指定input和output在gpu中的指针。
+    float* bindings[] = {input_data_device, output_data_device};
+
+    // ------------------------------ 2. 推理并将结果搬运回CPU   ----------------------------
+    bool success      = execution_context->enqueueV2((void**)bindings, stream, nullptr);
+
+    checkRuntime(cudaMemcpyAsync(output_data_pin, output_data_device, size_out, cudaMemcpyDeviceToHost, stream));
+    checkRuntime(cudaStreamSynchronize(stream));
+
+
+    // ------------------------------ 3. 释放内存 ----------------------------
+    checkRuntime(cudaStreamDestroy(stream));
+    checkRuntime(cudaFree(input_data_device));
+    checkRuntime(cudaFree(output_data_device));
+    checkRuntime(cudaFreeHost(input_data_pin)); //释放输入的 memory_pageable
+
+    return output_data_pin;
+}
+

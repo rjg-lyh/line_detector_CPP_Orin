@@ -21,6 +21,8 @@ float* warpaffine_and_normalize_float(const Mat& image, const Size& size);
 
 float* warpaffine_and_normalize_best(const Mat& image, const Size& size);
 
+float* warpaffine_and_normalize_best_info(const Mat& image, const Size& size);
+
 template<class T>
 void save_data_HWC(T pdata, const char* name, size_t size){
     ofstream ofs;
@@ -29,12 +31,6 @@ void save_data_HWC(T pdata, const char* name, size_t size){
         ofs << *(pdata++)<<"  " << *(pdata++)<<"  " <<*(pdata++) <<endl;
         //ofs << *(pdst_host) << endl;
     }
-    // for(int i=0; i<25700; ++i){
-    //     ++pdata;
-    // }
-    // for(int i=0; i<10; ++i){
-    //     ofs << *(pdata++) << endl;
-    // }
     ofs.close();
     cout << "成功存取 " << name <<  endl;
 }

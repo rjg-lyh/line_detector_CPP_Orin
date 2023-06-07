@@ -14,7 +14,7 @@ pair<Point2i, Point2i> computeEndDots(Mat& image, cv::Scalar dot_color, vector<P
 	cv::Vec4f line_para;
 	cv::fitLine(v, line_para, cv::DIST_L1, 0, 1e-2, 1e-2);
  
-	std::cout << "line_para = " << line_para << std::endl;
+	// std::cout << "line_para = " << line_para << std::endl;
  
 	//获取点斜式的点和斜率
 	cv::Point point0;
@@ -32,14 +32,14 @@ pair<Point2i, Point2i> computeEndDots(Mat& image, cv::Scalar dot_color, vector<P
     return pair<Point2i, Point2i>(point1, point2);
 }
 
-Point2i convertDot(const Point2i& point, int w, int h){
+Point2i invertDot(const Point2i& point, int w, int h){
     // (dot21[0]*(w//256),dot21[1]*(h//256)), (dot22[0]*(w//256),dot22[1]*(h//256))
     int x = point.x*(w/256);
     int y = point.y*(h/256);
     return Point2i(x, y);
 }
 
-Mat drawLine(const Mat& src, float* pdata){
+pair<cv::Point2i, cv::Point2i> drawLine(const Mat& src, float* pdata){
     vector<Point2i> v1;
     vector<Point2i> v2;
     vector<Point2i> v3;
@@ -83,13 +83,18 @@ Mat drawLine(const Mat& src, float* pdata){
     // cv::imshow("mask 256✖256", mask);
     // cv::waitKey(0);
     
-    Mat image(src);
-    int w = image.cols;
-    int h = image.rows;
-    cv::line(src, convertDot(pair2.first, w, h), convertDot(pair2.second, w, h), cv::Scalar(255, 0, 0), 13, 8, 0); //右主作物行
-    cv::line(src, convertDot(pair3.first, w, h), convertDot(pair3.second, w, h), cv::Scalar(0, 0, 255), 13, 8, 0); //左主作物行
-    cv::line(src, convertDot(pair4.first, w, h), convertDot(pair4.second, w, h), cv::Scalar(0, 255, 0), 13, 8, 0); //导航线
+    int w = src.cols;
+    int h = src.rows;
+    Point2i pair2_inv_1 = invertDot(pair2.first, w, h);
+    Point2i pair2_inv_2 = invertDot(pair2.second, w, h);
+    Point2i pair3_inv_1 = invertDot(pair3.first, w, h);
+    Point2i pair3_inv_2 = invertDot(pair3.second, w, h);
+    Point2i pair4_inv_1 = invertDot(pair4.first, w, h);
+    Point2i pair4_inv_2 = invertDot(pair4.second, w, h);
 
-	return image;
+    cv::line(src, pair2_inv_1, pair2_inv_2, cv::Scalar(255, 0, 0), 13, 8, 0); //右主作物行
+    cv::line(src, pair3_inv_1, pair3_inv_2, cv::Scalar(0, 0, 255), 13, 8, 0); //左主作物行
+    cv::line(src, pair4_inv_1, pair4_inv_2, cv::Scalar(0, 255, 0), 13, 8, 0); //导航线
+    return pair<cv::Point2i, cv::Point2i>(pair4_inv_1, pair4_inv_2);
 
 }

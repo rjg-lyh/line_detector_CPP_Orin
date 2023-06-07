@@ -14,16 +14,27 @@ NO_COLOR=\033[0m
 GREEN_COLOR=\033[32;01m
 RED_COLOR=\033[31;01m
 
+# include_paths := src \
+# 				/usr/local/include/opencv4 \
+# 				/usr/local/cuda/include \
+# 				/usr/local/protobuf-3.11.4-cpp/include \
+# 				/usr/include/aarch64-linux-gnu
+
 include_paths := src \
 				/usr/local/include/opencv4 \
 				/usr/local/cuda/include \
 				/usr/local/protobuf-3.11.4-cpp/include \
-				/usr/include/aarch64-linux-gnu
+				/usr/local/TensorRT-8.5.3.1/include
+
+# library_paths := /usr/local/lib \
+# 				/usr/local/cuda/lib64 \
+# 				/usr/local/protobuf-3.11.4-cpp/lib \
+# 				/usr/lib/aarch64-linux-gnu
 
 library_paths := /usr/local/lib \
-				/usr/local/cuda/lib64 \
+				/usr/local/cuda-11.3/lib64 \
 				/usr/local/protobuf-3.11.4-cpp/lib \
-				/usr/lib/aarch64-linux-gnu
+				/usr/local/TensorRT-8.5.3.1/lib
 				
 empty := 
 library_path_export := $(subst $(empty) $(empty),:,$(library_paths))
@@ -34,7 +45,7 @@ run_paths := $(library_paths:%=-Wl,-rpath=%)
 include_paths := $(include_paths:%=-I%)
 library_paths := $(library_paths:%=-L%)
 
-opencv_ld   := opencv_core opencv_imgproc opencv_highgui opencv_imgcodecs
+opencv_ld   := opencv_core opencv_imgproc opencv_highgui opencv_imgcodecs opencv_videoio
 cuda_ld     := cudart cudnn
 #tensorrt_ld := nvinfer nvonnxparser
 tensorrt_ld := nvinfer nvinfer_plugin
@@ -44,8 +55,8 @@ ld_librarys := $(cuda_ld) $(opencv_ld) $(sys_ld) $(tensorrt_ld)
 ld_librarys := $(ld_librarys:%=-l%)
 
 
-cpp_compile_flags := -std=c++11 -w -g -O0 -fPIC -fopenmp -pthread
-cu_compile_flags  := -std=c++11 -w -O0 -Xcompiler "$(cpp_compile_flags)"
+cpp_compile_flags := -std=c++11 -w -g -m64 -O0 -fPIC -fopenmp -pthread
+cu_compile_flags  := -std=c++11 -w -O0 -m64 -Xcompiler "$(cpp_compile_flags)"
 link_flags := -pthread -fopenmp -Wl,-rpath='$$ORIGIN'
 
 cpp_compile_flags += $(include_paths)

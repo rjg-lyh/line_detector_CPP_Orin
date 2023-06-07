@@ -6,15 +6,17 @@
                 "${workspaceFolder}/**",
                 "/usr/local/include/opencv4",
                 "/usr/local/cuda/include",
-                "/usr/include/aarch64-linux-gnu",
+                "/usr/local/TensorRT-8.5.3.1/include",
                 "/usr/local/protobuf-3.11.4-cpp/include"
+                // "/usr/include/aarch64-linux-gnu"
             ],
             "browse": {"path": [
                 "${workspaceFolder}/**",
                 "/usr/local/include/opencv4",
                 "/usr/local/cuda/include",
-                "/usr/include/aarch64-linux-gnu",
+                "/usr/local/TensorRT-8.5.3.1/include",
                 "/usr/local/protobuf-3.11.4-cpp/include"
+                // "/usr/include/aarch64-linux-gnu"
             ]},
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

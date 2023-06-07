@@ -48,8 +48,10 @@ inline const char* severity_string(nvinfer1::ILogger::Severity t);
 
 vector<unsigned char> load_file(const string& file);
 
-bool build_model(char* model_name);
+bool build_model(const char* model_name);
 
-PairThree* load_model(string path);
+PairThree* load_model(const string& path);
+
+float* inference_info(nvinfer1::IExecutionContext* execution_context, float* input_data_pin, size_t input_data_size, size_t output_data_size);
 
 float* inference(nvinfer1::IExecutionContext* execution_context, float* input_data_pin, size_t input_data_size, size_t output_data_size);
