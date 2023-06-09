@@ -111,7 +111,7 @@ float* warpaffine_and_normalize_best_info(const Mat& image, const Size& size){
         114
     );
     printInfo(clock.getTimeMilliSec(), 5, "核函数处理", 1);
-    cout << GREEN << left << setw(70)<< "|---------核函数处理: " + to_string(clock.getTimeMilliSec()) + "ms" << NONE << endl;
+    // cout << GREEN << left << setw(70)<< "|---------核函数处理: " + to_string(clock.getTimeMilliSec()) + "ms" << NONEE << endl;
 
     // 检查核函数执行是否存在错误
     checkRuntime(cudaPeekAtLastError());

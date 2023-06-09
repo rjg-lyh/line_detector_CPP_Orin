@@ -56,10 +56,11 @@ float visualServoingCtl(Camera& camera, vector<float> &desiredState, vector<floa
 }
 
 float getWheelAngle(float w_robot, float v_des, float L, float B){
-  float R = v_des/w_robot;
+  double tmp = v_des/abs(w_robot);
+  float R = tmp > B ? tmp : B + 0.0001; //R必须大于B
   float theta_1 = atan(L/(R-B)); //内轮
   float theta_2 = atan(L/(R+B)); //外轮
-  return (rad2deg(theta_1) + rad2deg(theta_2))/2;
+  return w_robot >= 0 ? (rad2deg(theta_1) + rad2deg(theta_2))/2 : -(rad2deg(theta_1) + rad2deg(theta_2))/2;
 }
 
 float control_unit(Camera& cam, float L, float B, float frame_height, float v_des, float e_x, float e_angle){
@@ -84,4 +85,15 @@ float control_unit(Camera& cam, float L, float B, float frame_height, float v_de
   // cout << "车轮转角：" << wheelAngle << endl;
 
   return wheelAngle;
+}
+
+string angle2signal(SerialPort *serialPort, float wheelAngle){
+  float prop = 39 / 90.f;
+  int m = int(wheelAngle*prop) + 39;
+  int n = m*254.0/78;
+  string s = DecIntToHexStr(n);
+  if(s.length() < 2){
+    s = "0" + s;
+  }
+  return "FF 01 01 30 " + s + " 00 00 00 FF\n";
 }

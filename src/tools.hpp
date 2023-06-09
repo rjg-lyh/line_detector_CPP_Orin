@@ -10,7 +10,7 @@ using namespace std;
 using namespace cv;
 using namespace std::chrono;
 
-#define NONE                  "\e[0m"           //清除颜色，即之后的打印为正常输出，之前的不受影响
+#define NONEE                  "\e[0m"           //清除颜色，即之后的打印为正常输出，之前的不受影响
 #define BLACK                 "\e[0;30m"         //深黑
 #define L_BLACK             "\e[1;30m"            //亮黑，偏灰褐
 #define RED                     "\e[0;31m"      //深红，暗红
@@ -69,5 +69,7 @@ void draw_dotted_line1(Mat img, Point2f p1, Point2f p2, Scalar color, int thickn
 // 画由线组成的虚线
 void draw_dotted_line2(Mat& img, Point2f p1, Point2f p2, Scalar color, int thickness, float n);
 
+std::string string_to_hex(const std::string& input);
 
+string DecIntToHexStr(long long num);
 

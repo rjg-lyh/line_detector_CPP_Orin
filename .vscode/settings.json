@@ -83,7 +83,8 @@
         "unordered_set": "cpp",
         "*.txx": "cpp",
         "locale": "cpp",
-        "ios": "cpp"
+        "ios": "cpp",
+        "valarray": "cpp"
     },
     "ros.distro": "foxy",
     // "editor.tokenColorCustomizations": {

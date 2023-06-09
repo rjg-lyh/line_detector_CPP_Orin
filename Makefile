@@ -24,7 +24,9 @@ include_paths := src \
 				/usr/local/include/opencv4 \
 				/usr/local/cuda/include \
 				/usr/local/protobuf-3.11.4-cpp/include \
-				/usr/local/TensorRT-8.5.3.1/include
+				/usr/local/TensorRT-8.5.3.1/include \
+				/usr/local/include             #SerialPort
+
 
 # library_paths := /usr/local/lib \
 # 				/usr/local/cuda/lib64 \
@@ -51,7 +53,8 @@ cuda_ld     := cudart cudnn
 tensorrt_ld := nvinfer nvinfer_plugin
 #sys_ld      := stdc++ dl
 sys_ld      := stdc++ dl protobuf
-ld_librarys := $(cuda_ld) $(opencv_ld) $(sys_ld) $(tensorrt_ld)
+serialport  := CppLinuxSerial
+ld_librarys := $(cuda_ld) $(opencv_ld) $(sys_ld) $(tensorrt_ld) $(serialport)
 ld_librarys := $(ld_librarys:%=-l%)
 
 

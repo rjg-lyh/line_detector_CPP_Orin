@@ -43,8 +43,8 @@ FitInfo computeEndDots(Mat& mask, cv::Scalar dot_color, vector<Point2i> v){
 
 Point2i invertDot(const Point2i& point, int w, int h){
     // (dot21[0]*(w//256),dot21[1]*(h//256)), (dot22[0]*(w//256),dot22[1]*(h//256))
-    int x = point.x*(w/256);
-    int y = point.y*(h/256);
+    int x = point.x*(w/256.0);
+    int y = point.y*(h/256.0);
     return Point2i(x, y);
 }
 
@@ -110,7 +110,7 @@ OutInfo* postprocess(Mat& src, float* pdata){
         draw_dotted_line2(src, pair3_inv_1, pair3_inv_2, cv::Scalar(0, 0, 255), 13, 45);
     }
 
-    cv::arrowedLine(src, Point2i(w/2, h-2), Point2i(w/2, h*4/5), Scalar(0,255,0),10); // 中心箭头可视化
+    cv::arrowedLine(src, Point2i(w/2, h-2), Point2i(w/2, h*4.0/5), Scalar(0,255,0),10); // 中心箭头可视化
 
     // 导航线拟合失败，直接返回 无效
     if(! fitinfo_4.valid){
@@ -130,9 +130,9 @@ OutInfo* postprocess(Mat& src, float* pdata){
 
     int x_center = w/2;
     int x0, x_t;
-    int y_t = h*4/5;
+    int y_t = h*(4.f/5);
     float angle;
-    double k = 9999999;
+    double k = 9999999.;
 
     if(x1 == x2){
         x0 = x1;
@@ -140,7 +140,7 @@ OutInfo* postprocess(Mat& src, float* pdata){
         angle = 90;
     }
     else{
-        k = (y1 - y2)/(x1 - x2);
+        k = float(y1 - y2)/(x1 - x2);
         x0 = (h - y1)/k + x1;
         x_t = (y_t - y1)/k + x1;
         angle = -rad2deg(atan(k)); //-90 ~ 90，由于y轴是倒着的，所以加个负号

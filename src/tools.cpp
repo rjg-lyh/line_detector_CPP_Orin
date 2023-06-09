@@ -2,27 +2,27 @@
 
 void ppColor(){
     printf("This is a character control test!\n" );
-    printf("[%2u]" CLEAR "CLEAR\n" NONE, __LINE__);
-    printf("[%2u]" BLACK "BLACK " L_BLACK "L_BLACK\n" NONE, __LINE__);
-    printf("[%2u]" RED "RED " L_RED "L_RED\n" NONE, __LINE__);
-    printf("[%2u]" GREEN "GREEN " L_GREEN "L_GREEN\n" NONE, __LINE__);
-    printf("[%2u]" BROWN "BROWN " YELLOW "YELLOW\n" NONE, __LINE__);
-    printf("[%2u]" BLUE "BLUE " L_BLUE "L_BLUE\n" NONE, __LINE__);
-    printf("[%2u]" PURPLE "PURPLE " L_PURPLE "L_PURPLE\n" NONE, __LINE__);
-    printf("[%2u]" CYAN "CYAN " L_CYAN "L_CYAN\n" NONE, __LINE__);
-    printf("[%2u]" GRAY "GRAY " WHITE "WHITE\n" NONE, __LINE__);
-    printf("[%2u]" BOLD "BOLD\n" NONE, __LINE__);
-    printf("[%2u]" UNDERLINE "UNDERLINE\n" NONE, __LINE__);
-    printf("[%2u]" BLINK "BLINK\n" NONE, __LINE__);
-    printf("[%2u]" REVERSE "REVERSE\n" NONE, __LINE__);
-    printf("[%2u]" HIDE "HIDE\n" NONE, __LINE__);
+    printf("[%2u]" CLEAR "CLEAR\n" NONEE, __LINE__);
+    printf("[%2u]" BLACK "BLACK " L_BLACK "L_BLACK\n" NONEE, __LINE__);
+    printf("[%2u]" RED "RED " L_RED "L_RED\n" NONEE, __LINE__);
+    printf("[%2u]" GREEN "GREEN " L_GREEN "L_GREEN\n" NONEE, __LINE__);
+    printf("[%2u]" BROWN "BROWN " YELLOW "YELLOW\n" NONEE, __LINE__);
+    printf("[%2u]" BLUE "BLUE " L_BLUE "L_BLUE\n" NONEE, __LINE__);
+    printf("[%2u]" PURPLE "PURPLE " L_PURPLE "L_PURPLE\n" NONEE, __LINE__);
+    printf("[%2u]" CYAN "CYAN " L_CYAN "L_CYAN\n" NONEE, __LINE__);
+    printf("[%2u]" GRAY "GRAY " WHITE "WHITE\n" NONEE, __LINE__);
+    printf("[%2u]" BOLD "BOLD\n" NONEE, __LINE__);
+    printf("[%2u]" UNDERLINE "UNDERLINE\n" NONEE, __LINE__);
+    printf("[%2u]" BLINK "BLINK\n" NONEE, __LINE__);
+    printf("[%2u]" REVERSE "REVERSE\n" NONEE, __LINE__);
+    printf("[%2u]" HIDE "HIDE\n" NONEE, __LINE__);
 }
 
 void printInfo(double time, int count, const char* seq, int state){
     if(state == 0)
-        cout << PURPLE << left << setw(70 + count - 4)<< "|---------" + string(seq) + ": " + to_string(time) + "ms" << "|" << NONE << endl << endl;
+        cout << PURPLE << left << setw(70 + count - 4)<< "|---------" + string(seq) + ": " + to_string(time) + "ms" << "|" << NONEE << endl << endl;
     else
-        cout << GREEN << left << setw(70 + count - 4)<< "|---------" + string(seq) + ": " + to_string(time) + "ms" << "|" << NONE << endl;    
+        cout << GREEN << left << setw(70 + count - 4)<< "|---------" + string(seq) + ": " + to_string(time) + "ms" << "|" << NONEE << endl;    
 }
 
 void TimerClock::update(){
@@ -136,4 +136,31 @@ void draw_dotted_line1(Mat img, Point2f p1, Point2f p2, Scalar color, int thickn
         for (float x = x1 + m; x < x2; x = x + m)
             circle(img, Point2f(x, k * (x - p1.x) + p1.y), 1, color, thickness);
     }
+}
+
+std::string string_to_hex(const std::string& input) { 
+    static const char* const lut = "0123456789ABCDEF"; 
+    size_t len = input.length(); 
+    std::string output; 
+    output.reserve(2 * len); 
+    for (size_t i = 0; i < len; ++i) { 
+        const unsigned char c = input[i]; 
+        output.push_back(lut[c >> 4]); 
+        output.push_back(lut[c & 15]); 
+    } 
+    return output; 
+}
+
+string DecIntToHexStr(long long num)
+{
+	string str;
+	long long Temp = num / 16;
+	int left = num % 16;
+	if (Temp > 0)
+		str += DecIntToHexStr(Temp);
+	if (left < 10)
+		str += (left + '0');
+	else
+		str += ('A' + left - 10);
+	return str;
 }

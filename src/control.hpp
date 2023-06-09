@@ -3,11 +3,10 @@
 #include<tools.hpp>
 #include<eigen3/Eigen/Dense>
 #include<eigen3/Eigen/Core> 
-#include<eigen3/Eigen/SVD> 
+#include<eigen3/Eigen/SVD>
+#include<CppLinuxSerial/SerialPort.hpp>
 
-using namespace std;
-using namespace cv;
-
+using namespace mn::CppLinuxSerial;
 
 struct Camera
 {
@@ -53,3 +52,5 @@ float visualServoingCtl(Camera& camera, vector<float> &desiredState, vector<floa
 float getWheelAngle(float w_robot, float v_des, float L, float B);
 
 float control_unit(Camera& cam, float L, float B, float frame_height, float v_des, float e_x, float e_angle);
+
+string angle2signal(SerialPort *serialPort, float wheelAngle);

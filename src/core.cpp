@@ -54,7 +54,8 @@ int build_or_inferOnePicture(const char* onnx_name, const string& path, int stat
     return 0;
 }
 
-int runCamera(nvinfer1::IExecutionContext *model, cv::Size resize_scale, size_t input_data_size, size_t output_data_size,
+int runCamera(nvinfer1::IExecutionContext *model, SerialPort* serialPort,
+              cv::Size resize_scale, size_t input_data_size, size_t output_data_size,
               Camera& cam, float v_des, float L, float B){
     VideoCapture capture(0);
     // string pipeline = "v4l2src device=/dev/video4 ! video/x-raw,format=UYVY,width=1920,height=1080, \
@@ -84,8 +85,12 @@ int runCamera(nvinfer1::IExecutionContext *model, cv::Size resize_scale, size_t 
         float* output_data_pin = inference(model, pdst_pin, input_data_size, output_data_size); //模型预测结果
         OutInfo* outinfo = postprocess(frame, output_data_pin); //后处理
         
-        // float wheelAngle = control_unit(cam, L, B, frame_H, v_des, outinfo->ex, outinfo->e_angle);          // control code
-        float wheelAngle = control_unit(cam, L, B, 512, v_des, 10, -30);
+        float wheelAngle = control_unit(cam, L, B, frame_H, v_des, outinfo->ex, outinfo->e_angle);    // control, wheelAngle区间范围[-90, 90]
+        // float wheelAngle = control_unit(cam, L, B, 512, v_des, 10, -30);
+
+        string signal = angle2signal(serialPort, wheelAngle);      //车轮角度转化为对应的Hex信号
+        serialPort->Write(signal);
+        // serialPort->Write(string_to_hex(signal));    //串口输出控制信号，下位机转动车轮
 
         imshow("camera-frame", frame);
         cout << "wheelAngle: " << wheelAngle << endl;
@@ -97,6 +102,7 @@ int runCamera(nvinfer1::IExecutionContext *model, cv::Size resize_scale, size_t 
 			break;
 		}
     }
+    
     cv::destroyAllWindows();
     capture.release();
     return 0;
@@ -107,8 +113,22 @@ int runRobot(const string& path, const cv::Size &resize_scale, const size_t &inp
 
     PairThree* params = load_model(path);
     nvinfer1::IExecutionContext* model = params->model;
-    runCamera(model, resize_scale, input_size, output_size, cam, v_des, L, B);
 
+    SerialPort* serialPort = new SerialPort("/dev/pts/5", BaudRate::B_9600);
+    serialPort->SetTimeout(0); //无阻塞， -1：阻塞接受
+    serialPort->Open(); //打开串口
+    
+    serialPort->Write("FF 01 01 30 80 00 00 00 FF\n");
+    // serialPort->Write(string_to_hex("FF 01 01 30 80 00 00 00 FF")); // 启动农机，速度30，正方向 
+
+    runCamera(model, serialPort, resize_scale, input_size, output_size, cam, v_des, L, B); //运行相机，开始无人导航
+
+    serialPort->Write("FF 00 00 00 80 00 00 00 FF\n");
+    // serialPort->Write(string_to_hex("FF 00 00 00 80 00 00 00 FF")); // 刹车复位，车轮摆正
+
+    serialPort->Close();
+
+    delete serialPort;
     delete params;
     return 0;
 }
