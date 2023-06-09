@@ -54,7 +54,8 @@ int build_or_inferOnePicture(const char* onnx_name, const string& path, int stat
     return 0;
 }
 
-int runCamera(nvinfer1::IExecutionContext *model, cv::Size resize_scale, size_t input_data_size, size_t output_data_size){
+int runCamera(nvinfer1::IExecutionContext *model, cv::Size resize_scale, size_t input_data_size, size_t output_data_size,
+              Camera& cam, float v_des, float L, float B){
     VideoCapture capture(0);
     // string pipeline = "v4l2src device=/dev/video4 ! video/x-raw,format=UYVY,width=1920,height=1080, \
     // framerate=30/1! videoconvert ! appsink video-sink=xvimagesink sync=false";
@@ -67,24 +68,29 @@ int runCamera(nvinfer1::IExecutionContext *model, cv::Size resize_scale, size_t 
         cout << "打开摄像头失败..." << endl;
         return -1;
     }
+    double frame_W = capture.get(cv::CAP_PROP_FRAME_WIDTH);
+    double frame_H = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
+    cout << "w: " << frame_W << endl;
+    cout << "h: " << frame_H << endl;
 
-    Mat frame_naive, frame;
 	namedWindow("camera-frame", 0);
     resizeWindow("camera-frame", 1422, 800); 
+
+    Mat frame_naive, frame;
     while (capture.read(frame_naive)){
         // undistort(frame_naive, frame, mat_intri, coff_dis, noArray());//去畸变
         frame = frame_naive;
         float* pdst_pin = warpaffine_and_normalize_best(frame, resize_scale); //预处理
         float* output_data_pin = inference(model, pdst_pin, input_data_size, output_data_size); //模型预测结果
         OutInfo* outinfo = postprocess(frame, output_data_pin); //后处理
-        cudaFreeHost(output_data_pin);
-        //********************
-        // control code
-        //********************
+        
+        // float wheelAngle = control_unit(cam, L, B, frame_H, v_des, outinfo->ex, outinfo->e_angle);          // control code
+        float wheelAngle = control_unit(cam, L, B, 512, v_des, 10, -30);
+
         imshow("camera-frame", frame);
-        // printf("dot1: (%d, %d)  dot2: (%d, %d)\n\n",
-        //        pair_dots.first.x, pair_dots.first.y, 
-        //        pair_dots.second.x, pair_dots.second.y);
+        cout << "wheelAngle: " << wheelAngle << endl;
+
+        cudaFreeHost(output_data_pin);
         delete outinfo;
         char c = waitKey(1);
 		if (c == 27) {
@@ -96,11 +102,12 @@ int runCamera(nvinfer1::IExecutionContext *model, cv::Size resize_scale, size_t 
     return 0;
 }
 
-int runRobot(const string& path, const cv::Size &resize_scale, const size_t &input_size, const size_t &output_size){
+int runRobot(const string& path, const cv::Size &resize_scale, const size_t &input_size, const size_t &output_size,
+            Camera& cam, float v_des, float L, float B){
 
     PairThree* params = load_model(path);
     nvinfer1::IExecutionContext* model = params->model;
-    runCamera(model, resize_scale, input_size, output_size);
+    runCamera(model, resize_scale, input_size, output_size, cam, v_des, L, B);
 
     delete params;
     return 0;

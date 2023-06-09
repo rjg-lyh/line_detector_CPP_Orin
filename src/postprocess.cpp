@@ -132,7 +132,7 @@ OutInfo* postprocess(Mat& src, float* pdata){
     int x0, x_t;
     int y_t = h*4/5;
     float angle;
-    double k;
+    double k = 9999999;
 
     if(x1 == x2){
         x0 = x1;
@@ -140,10 +140,10 @@ OutInfo* postprocess(Mat& src, float* pdata){
         angle = 90;
     }
     else{
-        double k = (y1 - y2)/(x1 - x2);
+        k = (y1 - y2)/(x1 - x2);
         x0 = (h - y1)/k + x1;
         x_t = (y_t - y1)/k + x1;
-        angle = rad2deg(atan(k)); //-90 ~ 90
+        angle = -rad2deg(atan(k)); //-90 ~ 90，由于y轴是倒着的，所以加个负号
     }
     outinfo->ex = x0 - x_center;
     outinfo->e_angle = angle >= 0 ? (90 - angle):-(90 + angle);
@@ -152,10 +152,12 @@ OutInfo* postprocess(Mat& src, float* pdata){
         cv::arrowedLine(src, Point2i(x0, h-2), Point2i(x_t, y_t), Scalar(255,0,0),10); // 导航线箭头可视化
     }
 
-    cv::putText(src,"lateral_deviation: " + to_string(outinfo->ex),Point(100,100),FONT_HERSHEY_SIMPLEX,3,Scalar(0,0,255),6,8);
-    cv::putText(src,"course_deviation: " + to_string(outinfo->e_angle),Point(100,200),FONT_HERSHEY_SIMPLEX,3,Scalar(0,0,255),6,8);
-    cv::putText(src,"x0: " + to_string(x0),Point(100,300),FONT_HERSHEY_SIMPLEX,3,Scalar(0,0,255),6,8);
-    cv::putText(src,"angle: " + to_string(angle),Point(100,400),FONT_HERSHEY_SIMPLEX,3,Scalar(0,0,255),6,8);
+    cv::putText(src,"lateral_deviation: " + to_string(outinfo->ex),Point(40,30),FONT_HERSHEY_SIMPLEX,2,Scalar(0,0,255),3,8);
+    cv::putText(src,"course_deviation: " + to_string(outinfo->e_angle),Point(40,80),FONT_HERSHEY_SIMPLEX,2,Scalar(0,0,255),3,8);
+    cv::putText(src,"x0: " + to_string(x0),Point(40,130),FONT_HERSHEY_SIMPLEX,2,Scalar(0,0,255),3,8);
+    cv::putText(src,"angle: " + to_string(angle),Point(40,180),FONT_HERSHEY_SIMPLEX,2,Scalar(0,0,255),3,8);
+    // cv::putText(src,"k: " + to_string(k),Point(40,230),FONT_HERSHEY_SIMPLEX,2,Scalar(0,0,255),3,8);
+
 
     return outinfo;
 
