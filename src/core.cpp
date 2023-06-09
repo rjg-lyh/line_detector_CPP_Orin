@@ -38,7 +38,7 @@ int build_or_inferOnePicture(const char* onnx_name, const string& path, int stat
     // save_data_CHW<float*>(output_data_pin, "output_data_host.txt", 256*256); //没打印全
 
     clock.update();
-    drawLine(src, output_data_pin);
+    OutInfo* outinfo = postprocess(src, output_data_pin);
     printInfo(clock.getTimeMilliSec(), 6, "后处理总时长", 0);
 
     cv::namedWindow("out", 0);
@@ -48,6 +48,7 @@ int build_or_inferOnePicture(const char* onnx_name, const string& path, int stat
     cv::destroyAllWindows();
 
     cudaFreeHost(output_data_pin);
+    delete outinfo;
     delete params;
 
     return 0;
@@ -67,22 +68,24 @@ int runCamera(nvinfer1::IExecutionContext *model, cv::Size resize_scale, size_t 
         return -1;
     }
 
-    Mat frame;
+    Mat frame_naive, frame;
 	namedWindow("camera-frame", 0);
     resizeWindow("camera-frame", 1422, 800); 
-    while (capture.read(frame)){
-        //去畸变
+    while (capture.read(frame_naive)){
+        // undistort(frame_naive, frame, mat_intri, coff_dis, noArray());//去畸变
+        frame = frame_naive;
         float* pdst_pin = warpaffine_and_normalize_best(frame, resize_scale); //预处理
         float* output_data_pin = inference(model, pdst_pin, input_data_size, output_data_size); //模型预测结果
-        auto pair_dots = drawLine(frame, output_data_pin); //后处理, 目前是在frame上画出导航线, 并返回两端点值
+        OutInfo* outinfo = postprocess(frame, output_data_pin); //后处理
         cudaFreeHost(output_data_pin);
         //********************
         // control code
         //********************
         imshow("camera-frame", frame);
-        printf("dot1: (%d, %d)  dot2: (%d, %d)\n\n",
-               pair_dots.first.x, pair_dots.first.y, 
-               pair_dots.second.x, pair_dots.second.y);
+        // printf("dot1: (%d, %d)  dot2: (%d, %d)\n\n",
+        //        pair_dots.first.x, pair_dots.first.y, 
+        //        pair_dots.second.x, pair_dots.second.y);
+        delete outinfo;
         char c = waitKey(1);
 		if (c == 27) {
 			break;

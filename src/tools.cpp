@@ -1,5 +1,4 @@
 #include "tools.hpp"
-#include "iomanip"
 
 void ppColor(){
     printf("This is a character control test!\n" );
@@ -40,4 +39,101 @@ double TimerClock::getTimeMilliSec(){
 // 获取微秒
 long long TimerClock::getTimeMicroSec(){
     return duration_cast<microseconds>(high_resolution_clock::now() - _start).count();
+}
+
+float wrapToPi(float theta){
+    while(theta < -M_PI)
+        theta += 2*M_PI;
+    while(theta > M_PI)
+        theta -= 2*M_PI;
+    return theta;
+}
+
+
+float deg2rad(float deg) {
+    return deg * M_PI / 180.0;
+}
+
+float rad2deg(float rad) {
+    return rad * 180.0 /M_PI;
+}
+
+// 画由线组成的虚线
+void draw_dotted_line2(Mat& img, Point2f p1, Point2f p2, Scalar color, int thickness, float n)
+{
+    float w = p2.x - p1.x, h = p2.y - p1.y;
+    float l = sqrtf(w * w + h * h);
+    // 矫正线长度，使线个数为奇数
+    int m = l / n;
+    m = m % 2 ? m : m + 1;
+    n = l / m;
+
+    circle(img, p1, 1, color, thickness); // 画起点
+    circle(img, p2, 1, color, thickness); // 画终点
+    // 画中间点
+    if (p1.y == p2.y) //水平线：y = m
+    {
+        float x1 = min(p1.x, p2.x);
+        float x2 = max(p1.x, p2.x);
+        for (float x = x1, n1 = 2 * n; x < x2; x = x + n1)
+            line(img, Point2f(x, p1.y), Point2f(x + n, p1.y), color, thickness);
+    }
+    else if (p1.x == p2.x) //垂直线, x = m
+    {
+        float y1 = min(p1.y, p2.y);
+        float y2 = max(p1.y, p2.y);
+        for (float y = y1, n1 = 2 * n; y < y2; y = y + n1)
+            line(img, Point2f(p1.x, y), Point2f(p1.x, y + n), color, thickness);
+    }
+    else // 倾斜线，与x轴、y轴都不垂直或平行
+    {
+        // 直线方程的两点式：(y-y1)/(y2-y1)=(x-x1)/(x2-x1) -> y = (y2-y1)*(x-x1)/(x2-x1)+y1
+        float n1 = n * abs(w) / l;
+        float k = h / w;
+        float x1 = min(p1.x, p2.x);
+        float x2 = max(p1.x, p2.x);
+        for (float x = x1, n2 = 2 * n1; x < x2; x = x + n2)
+        {
+            Point p3 = Point2f(x, k * (x - p1.x) + p1.y);
+            Point p4 = Point2f(x + n1, k * (x + n1 - p1.x) + p1.y);
+            line(img, p3, p4, color, thickness);
+        }
+    }
+}
+
+// 画由点组成的虚线
+void draw_dotted_line1(Mat img, Point2f p1, Point2f p2, Scalar color, int thickness, float n)
+{
+    float w = p2.x - p1.x, h = p2.y - p1.y;
+    float l = sqrtf(w * w + h * h);
+    int m = l / n;
+    n = l / m; // 矫正虚点间隔，使虚点数为整数
+
+    circle(img, p1, 1, color, thickness); // 画起点
+    circle(img, p2, 1, color, thickness); // 画终点
+    // 画中间点
+    if (p1.y == p2.y) // 水平线：y = m
+    {
+        float x1 = min(p1.x, p2.x);
+        float x2 = max(p1.x, p2.x);
+        for (float x = x1 + n; x < x2; x = x + n)
+            circle(img, Point2f(x, p1.y), 1, color, thickness);
+    }
+    else if (p1.x == p2.x) // 垂直线, x = m
+    {
+        float y1 = min(p1.y, p2.y);
+        float y2 = max(p1.y, p2.y);
+        for (float y = y1 + n; y < y2; y = y + n)
+            circle(img, Point2f(p1.x, y), 1, color, thickness);
+    }
+    else // 倾斜线，与x轴、y轴都不垂直或平行
+    {
+        // 直线方程的两点式：(y-y1)/(y2-y1)=(x-x1)/(x2-x1) -> y = (y2-y1)*(x-x1)/(x2-x1)+y1
+        float m = n * abs(w) / l;
+        float k = h / w;
+        float x1 = min(p1.x, p2.x);
+        float x2 = max(p1.x, p2.x);
+        for (float x = x1 + m; x < x2; x = x + m)
+            circle(img, Point2f(x, k * (x - p1.x) + p1.y), 1, color, thickness);
+    }
 }

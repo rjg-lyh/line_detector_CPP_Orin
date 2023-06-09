@@ -1,9 +1,13 @@
 #pragma once
 
 #include <iostream>
+#include "iomanip"
 #include <chrono>
+#include <cmath>
+#include <opencv2/opencv.hpp>
 
 using namespace std;
+using namespace cv;
 using namespace std::chrono;
 
 #define NONE                  "\e[0m"           //清除颜色，即之后的打印为正常输出，之前的不受影响
@@ -52,3 +56,18 @@ class TimerClock{
 void ppColor();
 
 void printInfo(double time, int count, const char* seq, int state);
+
+float wrapToPi(float theta);
+
+float deg2rad(float deg);
+
+float rad2deg(float rad);
+
+// 画由点组成的虚线
+void draw_dotted_line1(Mat img, Point2f p1, Point2f p2, Scalar color, int thickness, float n);
+
+// 画由线组成的虚线
+void draw_dotted_line2(Mat& img, Point2f p1, Point2f p2, Scalar color, int thickness, float n);
+
+
+
