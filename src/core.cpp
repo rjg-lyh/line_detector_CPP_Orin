@@ -8,6 +8,7 @@ int build_or_inferOnePicture(const char* onnx_name, const string& path, int stat
         return 0;
     }
 
+
     TimerClock clock;
     cout<<setfill('-')<<setiosflags(ios::right);
 
@@ -57,11 +58,17 @@ int build_or_inferOnePicture(const char* onnx_name, const string& path, int stat
 int runCamera(nvinfer1::IExecutionContext *model, SerialPort* serialPort,
               cv::Size resize_scale, size_t input_data_size, size_t output_data_size,
               Camera& cam, float v_des, float L, float B){
-    VideoCapture capture(0);
-    // string pipeline = "v4l2src device=/dev/video4 ! video/x-raw,format=UYVY,width=1920,height=1080, \
-    // framerate=30/1! videoconvert ! appsink video-sink=xvimagesink sync=false";
 
-    // capture.open(pipeline, cv::CAP_GSTREAMER);
+    VideoCapture capture;
+    string pipeline = "v4l2src device=/dev/video4 ! video/x-raw,format=UYVY,width=1920,height=1080, \
+    framerate=30/1! videoconvert ! appsink";
+    // string pipeline = "v4l2src device=/dev/video4 ! video/x-raw,format=UYVY,width=1280,height=720, \
+    // framerate=30/1! videoconvert ! appsink";
+
+    // capture.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
+    // video-sink=xvimagesink sync=false
+    capture.open(pipeline, cv::CAP_GSTREAMER);
+
     if(capture.isOpened()){
         cout << "成功开启摄像头" << endl;
     }
@@ -79,11 +86,20 @@ int runCamera(nvinfer1::IExecutionContext *model, SerialPort* serialPort,
 
     Mat frame_naive, frame;
     while (capture.read(frame_naive)){
-        // undistort(frame_naive, frame, mat_intri, coff_dis, noArray());//去畸变
-        frame = frame_naive;
+        undistort(frame_naive, frame, mat_intri, coff_dis, noArray());//去畸变
+        // frame = frame_naive;
         float* pdst_pin = warpaffine_and_normalize_best(frame, resize_scale); //预处理
         float* output_data_pin = inference(model, pdst_pin, input_data_size, output_data_size); //模型预测结果
         OutInfo* outinfo = postprocess(frame, output_data_pin); //后处理
+        imshow("camera-frame", frame);
+        char c = waitKey(1);
+        if(! outinfo->valid){
+            cout << "无效图像 ! ! ! !" << endl;
+            cudaFreeHost(output_data_pin);
+            delete outinfo;
+            continue;
+        }
+
         
         float wheelAngle = control_unit(cam, L, B, frame_H, v_des, outinfo->ex, outinfo->e_angle);    // control, wheelAngle区间范围[-90, 90]
         // float wheelAngle = control_unit(cam, L, B, 512, v_des, 10, -30);
@@ -92,13 +108,11 @@ int runCamera(nvinfer1::IExecutionContext *model, SerialPort* serialPort,
         serialPort->Write(signal);
         // serialPort->Write(string_to_hex(signal));    //串口输出控制信号，下位机转动车轮
 
-        imshow("camera-frame", frame);
         cout << "wheelAngle: " << wheelAngle << endl;
 
         cudaFreeHost(output_data_pin);
         delete outinfo;
-        char c = waitKey(1);
-		if (c == 27) {
+		if (c == 'q') {
 			break;
 		}
     }
@@ -109,12 +123,12 @@ int runCamera(nvinfer1::IExecutionContext *model, SerialPort* serialPort,
 }
 
 int runRobot(const string& path, const cv::Size &resize_scale, const size_t &input_size, const size_t &output_size,
-            Camera& cam, float v_des, float L, float B){
+            string& port, BaudRate rate, Camera& cam, float v_des, float L, float B){
 
     PairThree* params = load_model(path);
     nvinfer1::IExecutionContext* model = params->model;
 
-    SerialPort* serialPort = new SerialPort("/dev/pts/5", BaudRate::B_9600);
+    SerialPort* serialPort = new SerialPort(port, rate);
     serialPort->SetTimeout(0); //无阻塞， -1：阻塞接受
     serialPort->Open(); //打开串口
     

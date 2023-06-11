@@ -33,4 +33,6 @@ Point2i invertDot(const Point2i& point, int w, int h);
 
 FitInfo computeEndDots(Mat& mask, cv::Scalar dot_color, vector<Point2i> v);
 
+FitInfo justicAndInvert(const FitInfo& fitinfo, int w, int h);
+
 OutInfo* postprocess(Mat& src, float* pdata);

@@ -18,4 +18,4 @@ int runCamera(nvinfer1::IExecutionContext *model, SerialPort* serialPort,
               Camera& cam, float v_des, float L, float B);
 
 int runRobot(const string& path, const cv::Size &resize_scale, const size_t &input_size, const size_t &output_size,
-            Camera& cam, float v_des, float L, float B);
+            string& port, BaudRate rate, Camera& cam, float v_des, float L, float B);

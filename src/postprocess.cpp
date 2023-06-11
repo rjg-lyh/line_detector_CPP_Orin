@@ -21,7 +21,7 @@ FitInfo computeEndDots(Mat& mask, cv::Scalar dot_color, vector<Point2i> v){
  
     // 垂直
     if(line_para[0] == 0){
-        return FitInfo(Point2i(line_para[2], 0), Point2i(line_para[2], 10), true);
+        return FitInfo(Point2i(line_para[2], 1), Point2i(line_para[2], 254), true);
     }
 
 	// 正常情况
@@ -29,14 +29,14 @@ FitInfo computeEndDots(Mat& mask, cv::Scalar dot_color, vector<Point2i> v){
 	point0.x = line_para[2];
 	point0.y = line_para[3];
 
-	double k = line_para[1] / line_para[0];
- 
-	//计算直线的端点(y = k(x - x0) + y0)
-	cv::Point point1, point2;
-	point1.x = 0;
-	point1.y = k * (0 - point0.x) + point0.y;
-	point2.x = 640;
-	point2.y = k * (640 - point0.x) + point0.y;
+    double k = line_para[1] / line_para[0];
+    // 计算直线的端点(y = k(x - x0) + y0)
+	cv::Point2i point1, point2, point3, point4;
+	point1.x = 1;
+	point1.y = k * (1 - point0.x) + point0.y;
+	point2.x = 20;
+	point2.y = k * (20 - point0.x) + point0.y;
+
     return FitInfo(point1, point2, true);
 }
 
@@ -46,6 +46,37 @@ Point2i invertDot(const Point2i& point, int w, int h){
     int x = point.x*(w/256.0);
     int y = point.y*(h/256.0);
     return Point2i(x, y);
+}
+
+FitInfo justicAndInvert(const FitInfo& fitinfo, int w, int h){
+    Point2i point1_inv, point2_inv;
+    point1_inv = invertDot(fitinfo.point1, w, h);
+    point2_inv = invertDot(fitinfo.point2, w, h);
+    if(point1_inv.x == point2_inv.x){
+        if(point1_inv.x < 0 || point1_inv.x > (w-1))
+            return FitInfo(Point2i(point1_inv.x, 1), Point2i(point1_inv.x, h-2),false);
+        return FitInfo(Point2i(point1_inv.x, 1), Point2i(point1_inv.x, h-2), true);
+    }
+    double k = double(point2_inv.y - point1_inv.y)/(point2_inv.x - point1_inv.x);
+
+    vector<Point2i> ans;
+    Point2i p1, p2, p3, p4;
+	p1.x = 1;
+	p1.y = k * (1 - point1_inv.x) + point1_inv.y;
+    if(p1.y >= 0 && p1.y <= (h-1)) ans.emplace_back(p1);
+	p2.x = w-1;
+	p2.y = k * (w-1 - point1_inv.x) + point1_inv.y;
+    if(p2.y >= 0 && p2.y <= (h-1)) ans.emplace_back(p2);
+    p3.y = 1;
+	p3.x = (1 - point1_inv.y)/k + point1_inv.x;
+    if(p3.x >= 0 && p3.x <= (w-1)) ans.emplace_back(p3);
+    p4.y = h-1;
+	p4.x = (h-1 - point1_inv.y)/k + point1_inv.x;
+    if(p4.x >= 0 && p4.x <= (w-1)) ans.emplace_back(p4);
+    if(ans.size() < 2)
+        return FitInfo(p1, p2, false);
+    return FitInfo(ans[0], ans[1], true);
+
 }
 
 OutInfo* postprocess(Mat& src, float* pdata){
@@ -97,17 +128,20 @@ OutInfo* postprocess(Mat& src, float* pdata){
     int h = src.rows;
 
     if(fitinfo_2.valid){
-        Point2i pair2_inv_1 = invertDot(fitinfo_2.point1, w, h);
-        Point2i pair2_inv_2 = invertDot(fitinfo_2.point2, w, h);
-        // cv::line(src, pair2_inv_1, pair2_inv_2, cv::Scalar(0, 0, 255), 13, 8, 0); //右主作物行
-        draw_dotted_line2(src, pair2_inv_1, pair2_inv_2, cv::Scalar(0, 0, 255), 13, 45);
+        FitInfo fitinfo_2_inv = justicAndInvert(fitinfo_2, w, h);
+        if(fitinfo_2_inv.valid){
+            cout << "point1: " << "(" << fitinfo_2_inv.point1.x << "," << fitinfo_2_inv.point1.y << ") ";
+            cout << "point2: " << "(" << fitinfo_2_inv.point2.x << "," << fitinfo_2_inv.point2.y << ")";
+            draw_dotted_line2(src, fitinfo_2_inv.point1, fitinfo_2_inv.point2, cv::Scalar(0, 0, 255), 13, 45);  //左主作物行
+            // cv::line(src, fitinfo_2_inv.point1, fitinfo_2_inv.point2, cv::Scalar(0, 0, 255), 13, 8, 0); 
+        }
     }
-
+    
     if(fitinfo_3.valid){
-        Point2i pair3_inv_1 = invertDot(fitinfo_3.point1, w, h);
-        Point2i pair3_inv_2 = invertDot(fitinfo_3.point2, w, h);
-        // cv::line(src, pair3_inv_1, pair3_inv_2, cv::Scalar(0, 0, 255), 13, 8, 0); //左主作物行
-        draw_dotted_line2(src, pair3_inv_1, pair3_inv_2, cv::Scalar(0, 0, 255), 13, 45);
+        FitInfo fitinfo_3_inv = justicAndInvert(fitinfo_3, w, h);
+        if(fitinfo_3_inv.valid){
+            draw_dotted_line2(src, fitinfo_3_inv.point1, fitinfo_3_inv.point2, cv::Scalar(0, 0, 255), 13, 45);  //右主作物行
+        }
     }
 
     cv::arrowedLine(src, Point2i(w/2, h-2), Point2i(w/2, h*4.0/5), Scalar(0,255,0),10); // 中心箭头可视化
@@ -116,23 +150,24 @@ OutInfo* postprocess(Mat& src, float* pdata){
     if(! fitinfo_4.valid){
         return outinfo;
     }
+    
     outinfo->valid = true;
 
-    Point2i pair4_inv_1 = invertDot(fitinfo_4.point1, w, h);
-    Point2i pair4_inv_2 = invertDot(fitinfo_4.point2, w, h);
-    // cv::line(src, pair4_inv_1, pair4_inv_2, cv::Scalar(255, 0, 0), 13, 8, 0); //导航线
-    draw_dotted_line2(src, pair4_inv_1, pair4_inv_2, cv::Scalar(255, 0, 0), 6, 45);
+    FitInfo fitinfo_4_inv = justicAndInvert(fitinfo_4, w, h);
+    if(fitinfo_4_inv.valid){
+        draw_dotted_line2(src, fitinfo_4_inv.point1, fitinfo_4_inv.point2, cv::Scalar(255, 0, 0), 13, 45);  //导航线
+    }
 
-    int x1 = pair4_inv_1.x; 
-    int y1 = pair4_inv_1.y;
-    int x2 = pair4_inv_2.x; 
-    int y2 = pair4_inv_2.y;
+    int x1 = fitinfo_4_inv.point1.x;
+    int y1 = fitinfo_4_inv.point1.y;
+    int x2 = fitinfo_4_inv.point2.x;
+    int y2 = fitinfo_4_inv.point2.y;
 
     int x_center = w/2;
     int x0, x_t;
     int y_t = h*(4.f/5);
     float angle;
-    double k = 9999999.;
+    double k;
 
     if(x1 == x2){
         x0 = x1;
@@ -148,16 +183,15 @@ OutInfo* postprocess(Mat& src, float* pdata){
     outinfo->ex = x0 - x_center;
     outinfo->e_angle = angle >= 0 ? (90 - angle):-(90 + angle);
 
-    if(0 < x0 < w){
+    if(x0 > 0 && x0< w){
         cv::arrowedLine(src, Point2i(x0, h-2), Point2i(x_t, y_t), Scalar(255,0,0),10); // 导航线箭头可视化
     }
 
-    cv::putText(src,"lateral_deviation: " + to_string(outinfo->ex),Point(40,30),FONT_HERSHEY_SIMPLEX,2,Scalar(0,0,255),3,8);
-    cv::putText(src,"course_deviation: " + to_string(outinfo->e_angle),Point(40,80),FONT_HERSHEY_SIMPLEX,2,Scalar(0,0,255),3,8);
-    cv::putText(src,"x0: " + to_string(x0),Point(40,130),FONT_HERSHEY_SIMPLEX,2,Scalar(0,0,255),3,8);
-    cv::putText(src,"angle: " + to_string(angle),Point(40,180),FONT_HERSHEY_SIMPLEX,2,Scalar(0,0,255),3,8);
+    cv::putText(src,"lateral_deviation: " + to_string(outinfo->ex),Point(40,50),FONT_HERSHEY_SIMPLEX,2,Scalar(0,0,255),3,8);
+    cv::putText(src,"course_deviation: " + to_string(outinfo->e_angle),Point(40,100),FONT_HERSHEY_SIMPLEX,2,Scalar(0,0,255),3,8);
+    cv::putText(src,"x0: " + to_string(x0),Point(40,150),FONT_HERSHEY_SIMPLEX,2,Scalar(0,0,255),3,8);
+    cv::putText(src,"angle: " + to_string(angle),Point(40,200),FONT_HERSHEY_SIMPLEX,2,Scalar(0,0,255),3,8);
     // cv::putText(src,"k: " + to_string(k),Point(40,230),FONT_HERSHEY_SIMPLEX,2,Scalar(0,0,255),3,8);
-
 
     return outinfo;
 

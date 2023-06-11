@@ -84,7 +84,9 @@
         "*.txx": "cpp",
         "locale": "cpp",
         "ios": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "dense": "cpp",
+        "*.ipp": "cpp"
     },
     "ros.distro": "foxy",
     // "editor.tokenColorCustomizations": {
