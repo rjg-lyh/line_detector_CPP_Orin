@@ -1,10 +1,5 @@
 #include "postprocess.hpp"
 
-float sigmoid(float x)
-{
-    return (1 / (1 + exp(-x)));
-}
-
 FitInfo computeEndDots(Mat& mask, cv::Scalar dot_color, vector<Point2i> v){
     // 判断是否合法
     if(v.size() < 10){
@@ -130,8 +125,8 @@ OutInfo* postprocess(Mat& src, float* pdata){
     if(fitinfo_2.valid){
         FitInfo fitinfo_2_inv = justicAndInvert(fitinfo_2, w, h);
         if(fitinfo_2_inv.valid){
-            cout << "point1: " << "(" << fitinfo_2_inv.point1.x << "," << fitinfo_2_inv.point1.y << ") ";
-            cout << "point2: " << "(" << fitinfo_2_inv.point2.x << "," << fitinfo_2_inv.point2.y << ")";
+            // cout << "point1: " << "(" << fitinfo_2_inv.point1.x << "," << fitinfo_2_inv.point1.y << ") ";
+            // cout << "point2: " << "(" << fitinfo_2_inv.point2.x << "," << fitinfo_2_inv.point2.y << ")";
             draw_dotted_line2(src, fitinfo_2_inv.point1, fitinfo_2_inv.point2, cv::Scalar(0, 0, 255), 13, 45);  //左主作物行
             // cv::line(src, fitinfo_2_inv.point1, fitinfo_2_inv.point2, cv::Scalar(0, 0, 255), 13, 8, 0); 
         }

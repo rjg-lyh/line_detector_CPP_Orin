@@ -14,30 +14,30 @@ NO_COLOR=\033[0m
 GREEN_COLOR=\033[32;01m
 RED_COLOR=\033[31;01m
 
-include_paths := src \
-				/usr/local/include/opencv4 \
-				/usr/local/cuda/include \
-				/usr/local/protobuf-3.11.4-cpp/include \
-				/usr/include/aarch64-linux-gnu \
-				/usr/local/include             #Eigen、SerialPort
-
 # include_paths := src \
 # 				/usr/local/include/opencv4 \
 # 				/usr/local/cuda/include \
 # 				/usr/local/protobuf-3.11.4-cpp/include \
-# 				/usr/local/TensorRT-8.5.3.1/include \
+# 				/usr/include/aarch64-linux-gnu \
 # 				/usr/local/include             #Eigen、SerialPort
 
+include_paths := src \
+				/usr/local/include/opencv4 \
+				/usr/local/cuda/include \
+				/usr/local/protobuf-3.11.4-cpp/include \
+				/usr/local/TensorRT-8.5.3.1/include \
+				/usr/local/include             #Eigen、SerialPort
 
-library_paths := /usr/local/lib \
-				/usr/local/cuda/lib64 \
-				/usr/local/protobuf-3.11.4-cpp/lib \
-				/usr/lib/aarch64-linux-gnu
 
 # library_paths := /usr/local/lib \
-# 				/usr/local/cuda-11.3/lib64 \
+# 				/usr/local/cuda/lib64 \
 # 				/usr/local/protobuf-3.11.4-cpp/lib \
-# 				/usr/local/TensorRT-8.5.3.1/lib
+# 				/usr/lib/aarch64-linux-gnu
+
+library_paths := /usr/local/lib \
+				/usr/local/cuda-11.3/lib64 \
+				/usr/local/protobuf-3.11.4-cpp/lib \
+				/usr/local/TensorRT-8.5.3.1/lib
 				
 empty := 
 library_path_export := $(subst $(empty) $(empty),:,$(library_paths))

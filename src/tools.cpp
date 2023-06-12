@@ -41,6 +41,11 @@ long long TimerClock::getTimeMicroSec(){
     return duration_cast<microseconds>(high_resolution_clock::now() - _start).count();
 }
 
+float sigmoid(float x)
+{
+    return (1 / (1 + exp(-x)));
+}
+
 float wrapToPi(float theta){
     while(theta < -M_PI)
         theta += 2*M_PI;

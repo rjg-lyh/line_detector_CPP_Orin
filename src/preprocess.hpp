@@ -1,5 +1,7 @@
 #pragma once
 
+#include "preprocess_kernel.cuh"
+#include "tools.hpp"
 #include <cuda_runtime.h>
 #include <opencv2/opencv.hpp>
 #include <stdio.h>
@@ -13,7 +15,7 @@ using namespace std;
 
 bool __check_cuda_runtime(cudaError_t code, const char* op, const char* file, int line);
 
-void warm_up_cuda(const Mat& image, const Size& size);
+void warm_up_cuda(const Size& size);
 
 Mat warpaffine_and_normalize_int(const Mat& image, const Size& size);
 

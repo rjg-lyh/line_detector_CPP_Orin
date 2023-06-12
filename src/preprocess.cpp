@@ -1,6 +1,4 @@
 #include "preprocess.hpp"
-#include "preprocess_kernel.cuh"
-#include "tools.hpp"
 
 bool __check_cuda_runtime(cudaError_t code, const char* op, const char* file, int line){
     if(code != cudaSuccess){
@@ -12,16 +10,14 @@ bool __check_cuda_runtime(cudaError_t code, const char* op, const char* file, in
     return true;
 }
 
-void warm_up_cuda(const Mat& image, const Size& size){
-    size_t src_size = image.cols * image.rows * 3;
+void warm_up_cuda(const Size& size){
     size_t dst_size = size.width * size.height * 3;
 
-    uint8_t* psrc_warm = nullptr;
-    TimerClock clock;
+    uint8_t* pdst_warm = nullptr;
 
-    checkRuntime(cudaMalloc(&psrc_warm, src_size)); // 在GPU上开辟两块空间
+    checkRuntime(cudaMalloc(&pdst_warm, dst_size)); // 在GPU上开辟两块空间
 
-    checkRuntime(cudaFree(psrc_warm));
+    checkRuntime(cudaFree(pdst_warm));
 }
 
 Mat warpaffine_and_normalize_int(const Mat& image, const Size& size){  

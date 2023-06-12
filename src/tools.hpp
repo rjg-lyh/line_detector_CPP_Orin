@@ -57,6 +57,8 @@ void ppColor();
 
 void printInfo(double time, int count, const char* seq, int state);
 
+float sigmoid(float x);
+
 float wrapToPi(float theta);
 
 float deg2rad(float deg);

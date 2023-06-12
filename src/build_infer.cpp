@@ -1,5 +1,4 @@
 #include "build_infer.hpp"
-#include "tools.hpp"
 
 inline const char* severity_string(nvinfer1::ILogger::Severity t){
     switch(t){
@@ -27,8 +26,89 @@ void TRTLogger::log(Severity severity, nvinfer1::AsciiChar const* msg) noexcept 
     }
 }
 
+Int8EntropyCalibrator::Int8EntropyCalibrator(const vector<string>& imagefiles, nvinfer1::Dims dims, const Int8Process& preprocess) {
+        assert(preprocess != nullptr);
+        this->dims_ = dims;
+        this->allimgs_ = imagefiles;
+        this->preprocess_ = preprocess;
+        this->fromCalibratorData_ = false;
+        files_.resize(dims.d[0]);
+}
+
+// 这个构造函数，是允许从缓存数据中加载标定结果，这样不用重新读取图像处理
+Int8EntropyCalibrator::Int8EntropyCalibrator(const vector<uint8_t>& entropyCalibratorData, nvinfer1::Dims dims, const Int8Process& preprocess) {
+        assert(preprocess != nullptr);
+        this->dims_ = dims;
+        this->entropyCalibratorData_ = entropyCalibratorData;
+        this->preprocess_ = preprocess;
+        this->fromCalibratorData_ = true;
+        files_.resize(dims.d[0]);
+}
+
+Int8EntropyCalibrator::~Int8EntropyCalibrator(){
+        if(tensor_host_ != nullptr){
+            checkRuntime(cudaFreeHost(tensor_host_));
+            checkRuntime(cudaFree(tensor_device_));
+            tensor_host_ = nullptr;
+            tensor_device_ = nullptr;
+        }
+ }
+
+    // 想要按照多少的batch进行标定
+int Int8EntropyCalibrator::getBatchSize() const noexcept {
+        return dims_.d[0];
+}
+
+bool Int8EntropyCalibrator::next() {
+        int batch_size = dims_.d[0];
+        if (cursor_ + batch_size > allimgs_.size())
+            return false;
+
+        for(int i = 0; i < batch_size; ++i)
+            files_[i] = allimgs_[cursor_++];
+
+        if(tensor_host_ == nullptr){
+            size_t volumn = 1;
+            for(int i = 0; i < dims_.nbDims; ++i)
+                volumn *= dims_.d[i];
+            
+            bytes_ = volumn * sizeof(float);
+            checkRuntime(cudaMallocHost(&tensor_host_, bytes_));
+            checkRuntime(cudaMalloc(&tensor_device_, bytes_));
+        }
+
+        preprocess_(cursor_, allimgs_.size(), files_, dims_, tensor_host_);
+        checkRuntime(cudaMemcpy(tensor_device_, tensor_host_, bytes_, cudaMemcpyHostToDevice));
+        return true;
+}
+
+bool Int8EntropyCalibrator::getBatch(void* bindings[], const char* names[], int nbBindings) noexcept {
+        if (!next()) return false;
+        bindings[0] = tensor_device_;
+        return true;
+}
+
+const vector<uint8_t>& Int8EntropyCalibrator::getEntropyCalibratorData() {
+        return entropyCalibratorData_;
+}
+
+const void* Int8EntropyCalibrator::readCalibrationCache(size_t& length) noexcept {
+        if (fromCalibratorData_) {
+            length = this->entropyCalibratorData_.size();
+            return this->entropyCalibratorData_.data();
+        }
+
+        length = 0;
+        return nullptr;
+}
+
+void Int8EntropyCalibrator::writeCalibrationCache(const void* cache, size_t length) noexcept {
+        entropyCalibratorData_.assign((uint8_t*)cache, (uint8_t*)cache + length);
+}
+
+
 // 上一节的代码
-bool build_model(const char* model_name){
+bool build_model_FT32(const char* model_name){
     TRTLogger logger;
 
     // 这是基本需要的组件
@@ -71,7 +151,7 @@ bool build_model(const char* model_name){
 
     // 将模型序列化，并储存为文件
     nvinfer1::IHostMemory* model_data = engine->serialize();
-    FILE* f = fopen("engine.trtmodel", "wb");
+    FILE* f = fopen("engine_ft32.trtmodel", "wb");
     fwrite(model_data->data(), 1, model_data->size(), f);
     fclose(f);
 
@@ -84,6 +164,92 @@ bool build_model(const char* model_name){
     builder->destroy();
     printf("Done.\n");
     return true;
+}
+
+bool build_model_INT8(const char* model_name){
+    TRTLogger logger;
+
+    // 这是基本需要的组件
+    nvinfer1::IBuilder* builder = nvinfer1::createInferBuilder(logger);
+    nvinfer1::IBuilderConfig* config = builder->createBuilderConfig();
+    nvinfer1::INetworkDefinition* network = builder->createNetworkV2(1);
+
+    // 通过onnxparser解析器解析的结果会填充到network中，类似addConv的方式添加进去
+    nvonnxparser::IParser* parser = nvonnxparser::createParser(*network, logger);
+    if(!parser->parseFromFile(model_name, 1)){
+        printf("Failed to parse %s\n", model_name);
+
+        // 注意这里的几个指针还没有释放，是有内存泄漏的，后面考虑更优雅的解决
+        return false;
+    }
+    
+    double workSpaceSize = 1 << 30;
+    printf("Workspace Size = %.2lf MB\n", workSpaceSize / 1024.0f / 1024.0f);
+    config->setMaxWorkspaceSize(workSpaceSize);
+
+
+    // 如果模型有多个输入，则必须多个profile
+    auto profile = builder->createOptimizationProfile();
+    auto input_tensor = network->getInput(0);
+    // int input_channel = input_tensor->getDimensions().d[1];
+    auto input_dims = input_tensor->getDimensions();
+    
+
+    auto preprocess = [](
+        int current, int count, const std::vector<std::string>& files, 
+        nvinfer1::Dims dims, float* ptensor
+    ){
+        printf("Preprocess %d / %d\n", count, current);
+        size_t volumn = dims.d[1] * dims.d[2] *dims.d[3];
+        size_t bytes_ = volumn * sizeof(float);
+        for(int i = 0; i < files.size(); ++i){
+            cv::Mat image = cv::imread(files[i]);
+            float* pdst_pin = warpaffine_and_normalize_best(image, cv::Size(dims.d[3], dims.d[2]));
+            checkRuntime(cudaMemcpy(ptensor + i*volumn, pdst_pin, bytes_, cudaMemcpyHostToHost));
+            checkRuntime(cudaFreeHost(pdst_pin));
+        }
+    };
+
+    ifstream ifs("calib_dataset.txt", ios::in);
+    vector<string> imagefiles;
+    string buf;
+	while (getline(ifs, buf))
+	{
+        cout << buf << endl;
+        imagefiles.emplace_back(buf);
+	}
+    ifs.close();
+
+    config->setFlag(nvinfer1::BuilderFlag::kINT8);
+    // 配置int8标定数据读取工具
+    Int8EntropyCalibrator *calib = new Int8EntropyCalibrator(imagefiles, input_dims, preprocess
+    );
+    config->setInt8Calibrator(calib);
+
+
+    nvinfer1::ICudaEngine* engine = builder->buildEngineWithConfig(*network, *config);
+    if(engine == nullptr){
+        printf("Build engine failed.\n");
+        return false;
+    }
+
+    // 将模型序列化，并储存为文件
+    nvinfer1::IHostMemory* model_data = engine->serialize();
+    FILE* f = fopen("engine_int8.trtmodel", "wb");
+    fwrite(model_data->data(), 1, model_data->size(), f);
+    fclose(f);
+
+    // 卸载顺序按照构建顺序倒序
+    model_data->destroy();
+    delete calib;
+    parser->destroy();
+    engine->destroy();
+    network->destroy();
+    config->destroy();
+    builder->destroy();
+    printf("Done.\n");
+    return true;
+
 }
 
 vector<unsigned char> load_file(const string& file){
