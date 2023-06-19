@@ -208,7 +208,7 @@ int runCamera(nvinfer1::IExecutionContext *model, SerialPort* serialPort,
         frame = frame_naive;
         float* pdst_pin = warpaffine_and_normalize_best(frame, resize_scale); //预处理
         float* output_data_pin = inference(model, pdst_pin, input_data_size, output_data_size); //模型预测结果
-        OutInfo* outinfo = postprocess(frame, output_data_pin); //后处理
+        OutInfo* outinfo = postprocess_no(frame, output_data_pin); //后处理
         imshow("camera-frame", frame);
         char c = waitKey(1);
         if(! outinfo->valid){

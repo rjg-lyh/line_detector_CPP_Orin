@@ -35,4 +35,8 @@ FitInfo computeEndDots(Mat& mask, cv::Scalar dot_color, vector<Point2i> v);
 
 FitInfo justicAndInvert(const FitInfo& fitinfo, int w, int h);
 
+FitInfo twoLines2one(FitInfo &L1, FitInfo &L2, int w, int h);
+
 OutInfo* postprocess(Mat& src, float* pdata);
+
+OutInfo* postprocess_no(Mat& src, float* pdata);
