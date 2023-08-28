@@ -15,7 +15,7 @@ def make_resize_scale(scale_name):
     return scale
     
 if __name__ == "__main__":
-    model = onnx.load("workspace/attn_unet2.onnx")
+    model = onnx.load("workspace/attn_unet_sas.onnx")
 
     # 1.处理Resize_44
     scale_1 = make_resize_scale("scale_1")
@@ -94,6 +94,6 @@ if __name__ == "__main__":
     
     # model.graph.node.remove(r1)
     # model.graph.node.append(r1_new)
-    onnx.save_model(model, "workspace/attn_unet_fresh2.onnx")
+    onnx.save_model(model, "workspace/attn_unet_sas_fresh.onnx")
             
         

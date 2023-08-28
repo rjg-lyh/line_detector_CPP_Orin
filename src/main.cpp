@@ -1,35 +1,14 @@
 #include "core.hpp"
 
-void test(){
-    cout<<setfill('-')<<setiosflags(ios::right);
-    cout << endl;
-    printInfo(14.318126, 10, "前处理：高斯模糊时长", 0);
-    printInfo(9.318624, 5, "前处理: resize时长", 0);
-    printInfo(24.512364, 6, "前处理总时长", 0);
-    cout << endl;
-    printInfo(8.703112, 6, "后处理：mask时长", 0);
-    printInfo(16.156384, 10, "后处理：直线拟合时长", 0);
-    printInfo(26.135687, 6, "后处理总时长", 0);
-
-    cout << endl << endl;
-    printInfo(6.187617, 10, "前处理：高斯模糊时长", 0);
-    printInfo(7.638154, 5, "前处理: resize时长", 0);
-    printInfo(14.115134, 6, "前处理总时长", 0);
-    cout << endl;
-    printInfo(6.318724, 6, "后处理：mask时长", 0);
-    printInfo(6.716491, 10, "后处理：直线拟合时长", 0);
-    printInfo(13.721534, 6, "后处理总时长", 0);
-
-}
-
 int main(){
     // test();
-    // build_or_inferOnePicture_FT32("attn_unet_fresh2.onnx", "engine_ft32.trtmodel", 1);
-    // build_or_inferOnePicture_INT8("attn_unet_fresh2.onnx", "engine_int8.trtmodel", 1);
+    // build_or_inferOnePicture_FT32("attn_unet_sas_fresh.onnx", "engine_ft32_sas.trtmodel", 1);
+    // build_or_inferOnePicture_INT8("attn_unet_fake_fresh.onnx", "engine_int8_fake.trtmodel", 0);
 
-    // performance_test("engine_ft32.trtmodel", "valid_dataset.txt", "valid_label.txt");
+    // performance_test("engine_ft32_sas.trtmodel", "valid_dataset.txt", "valid_label.txt");
     // performance_test("engine_int8.trtmodel", "valid_dataset.txt", "valid_label.txt");
 
+    
     string path = "engine_int8.trtmodel";      // 推理模型源文件
     Size resize_scale =  Size(256, 256);  // resize大小
     size_t input_size = 1*3*256*256;      // 推理模型的输入大小
@@ -45,6 +24,6 @@ int main(){
     float B = 0.4;                        // 轮间半轴长度
 
     runRobot(path, resize_scale, input_size, output_size, port, rate, cam, v_des, L, B); // Firing ! !
-
+    
     return 0;
 }

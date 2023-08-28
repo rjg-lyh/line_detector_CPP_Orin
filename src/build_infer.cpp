@@ -35,7 +35,7 @@ Int8EntropyCalibrator::Int8EntropyCalibrator(const vector<string>& imagefiles, n
         files_.resize(dims.d[0]);
 }
 
-// 这个构造函数，是允许从缓存数据中加载标定结果，这样不用重新读取图像处理
+// 允许从缓存数据中加载标定结果，这样不用重新读取图像处理
 Int8EntropyCalibrator::Int8EntropyCalibrator(const vector<uint8_t>& entropyCalibratorData, nvinfer1::Dims dims, const Int8Process& preprocess) {
         assert(preprocess != nullptr);
         this->dims_ = dims;
@@ -107,7 +107,6 @@ void Int8EntropyCalibrator::writeCalibrationCache(const void* cache, size_t leng
 }
 
 
-// 上一节的代码
 bool build_model_FT32(const char* model_name){
     TRTLogger logger;
 
@@ -121,7 +120,6 @@ bool build_model_FT32(const char* model_name){
     if(!parser->parseFromFile(model_name, 1)){
         printf("Failed to parse %s\n", model_name);
 
-        // 注意这里的几个指针还没有释放，是有内存泄漏的，后面考虑更优雅的解决
         return false;
     }
     
@@ -169,17 +167,16 @@ bool build_model_FT32(const char* model_name){
 bool build_model_INT8(const char* model_name){
     TRTLogger logger;
 
-    // 这是基本需要的组件
+    // 基本组件
     nvinfer1::IBuilder* builder = nvinfer1::createInferBuilder(logger);
     nvinfer1::IBuilderConfig* config = builder->createBuilderConfig();
     nvinfer1::INetworkDefinition* network = builder->createNetworkV2(1);
 
-    // 通过onnxparser解析器解析的结果会填充到network中，类似addConv的方式添加进去
+    // 通过onnxparser解析器解析的结果填充到network中
     nvonnxparser::IParser* parser = nvonnxparser::createParser(*network, logger);
     if(!parser->parseFromFile(model_name, 1)){
         printf("Failed to parse %s\n", model_name);
 
-        // 注意这里的几个指针还没有释放，是有内存泄漏的，后面考虑更优雅的解决
         return false;
     }
     

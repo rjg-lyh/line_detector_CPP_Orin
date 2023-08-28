@@ -25,9 +25,6 @@ Norm Norm::None(){
     return Norm();
 }
 
-// 计算仿射变换矩阵
-// 计算的矩阵是填充缩放
-
 __device__ void affine_project(float* matrix, int x, int y, float* proj_x, float* proj_y){
     // matrix
     // m0, m1, m2

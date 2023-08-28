@@ -1,14 +1,17 @@
 #include "postprocess.hpp"
 
-FitInfo computeEndDots(Mat& mask, cv::Scalar dot_color, vector<Point2i> v){
+FitInfo computeEndDots(Mat& src, cv::Scalar dot_color, vector<Point2i> v){
+    int w = src.cols;
+    int h = src.rows;
     // 判断是否合法
     if(v.size() < 10){
+        cout << v.size() << " 拟合失败" << endl;
         return FitInfo(false);
     }
 
     for (int i = 0; i < v.size(); i++)
 	{
-		cv::circle(mask, v[i], 1, dot_color, 1, 8, 0);
+		cv::circle(src, invertDot(v[i], w, h), 1, dot_color, 5, 8, 0);
 	}
  
 	cv::Vec4f line_para;
@@ -165,9 +168,9 @@ OutInfo* postprocess(Mat& src, float* pdata){
     Mat mask = cv::Mat::zeros(256, 256, CV_8UC3);
 	//将拟合点绘制到空白图上
 
-    FitInfo fitinfo_2 = computeEndDots(mask, cv::Scalar(0, 255, 0), v2);
-    FitInfo fitinfo_3 = computeEndDots(mask, cv::Scalar(255, 0, 0), v3);
-    FitInfo fitinfo_4 = computeEndDots(mask, cv::Scalar(0, 0, 255), v4);
+    FitInfo fitinfo_2 = computeEndDots(src, cv::Scalar(0, 255, 0), v2);
+    FitInfo fitinfo_3 = computeEndDots(src, cv::Scalar(255, 0, 0), v3);
+    FitInfo fitinfo_4 = computeEndDots(src, cv::Scalar(0, 0, 255), v4);
 	
     // cv::line(mask, pair2.first, pair2.second, cv::Scalar(255, 255, 0), 2, 8, 0);
     // cv::line(mask, pair3.first, pair3.second, cv::Scalar(0, 255, 255), 2, 8, 0);
@@ -201,6 +204,7 @@ OutInfo* postprocess(Mat& src, float* pdata){
 
     // 导航线拟合失败，直接返回 无效
     if(! fitinfo_4.valid){
+        cout << "导航线拟合失败" << endl;
         return outinfo;
     }
     

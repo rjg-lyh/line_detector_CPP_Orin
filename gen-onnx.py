@@ -20,7 +20,8 @@ class Model(torch.nn.Module):
 
 # 这个包对应opset11的导出代码，如果想修改导出的细节，可以在这里修改代码
 # import torch.onnx.symbolic_opset11
-print("对应opset文件夹代码在这里：", os.path.dirname(torch.onnx.__file__))
+# print("对应opset文件夹代码在这里：", os.path.dirname(torch.onnx.__file__))
+
 
 model = Model()
 dummy = torch.zeros(1, 1, 3, 3)

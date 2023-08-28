@@ -16,7 +16,11 @@ int build_or_inferOnePicture_FT32(const char* onnx_name, const string& path, int
     size_t input_size = 1*3*256*256;
     size_t output_size = 1*4*256*256;
 
-    Mat src = imread("ceshi.jpg");
+    Mat src = imread("/media/rjg/T7 Shield/Orin_T906G/dataset_SunAndShadow/images/val/img_122.png");
+
+    // clock.update();
+    // cv::GaussianBlur(src, src, Size(11,11), 11);
+    // printInfo(clock.getTimeMilliSec(), 7, "高斯模糊总时长", 0);
 
     // cuda预热 setfill('&')
     clock.update();
@@ -27,6 +31,14 @@ int build_or_inferOnePicture_FT32(const char* onnx_name, const string& path, int
     clock.update();
     float* pdst_pin = warpaffine_and_normalize_best_info(src, resize_scale);
     printInfo(clock.getTimeMilliSec(), 6, "前处理总时长", 0);
+
+    //保存预处理后的图片数据
+    // ofstream ofs("pdst_pin.txt", ios::out);
+    // float* p = pdst_pin;
+    // for(int i=0; i<3*256*256; ++i){
+    //     ofs << *p++ << endl;
+    // }
+    // ofs.close()
     
     clock.update();
     PairThree* params = load_model(path);
@@ -131,8 +143,8 @@ int performance_test(const string& path, const string& img_path, const string& l
 
     ifstream ifs_1(img_path, ios::in);
     ifstream ifs_2(label_path, ios::in);
-    vector<string> images;      //测试数据集的图片路径
-    vector<string> labels;      //label的图片路径
+    vector<std::string> images;      //测试数据集的图片路径
+    vector<std::string> labels;      //label的图片路径
     string buf;
 	while (getline(ifs_1, buf))
         images.emplace_back(buf);
@@ -142,6 +154,9 @@ int performance_test(const string& path, const string& img_path, const string& l
     for(int i=0; i<images.size(); ++i){
         cout << i << " /" << images.size() << " 推理中..." << endl;
         cv::Mat image = cv::imread(images[i]);
+
+        cv::GaussianBlur(image, image, Size(11,11), 11); //高斯模糊
+
         cv::Mat label = cv::imread(labels[i]);
         cv::resize(label, label, cv::Size(256, 256));
         float* pdst_pin = warpaffine_and_normalize_best(image, resize_scale);
@@ -149,6 +164,12 @@ int performance_test(const string& path, const string& img_path, const string& l
         clock.update();
         float* output_data_pin = inference(model, pdst_pin, input_size, output_size);
         cost_time += clock.getTimeMilliSec();
+        // 保存推理图片
+        // OutInfo* outinfo = postprocess(image, output_data_pin);
+        // string path = images[i];
+        // auto p = path.rfind("/", path.length()-1);
+        // string pic_name = path.substr(p+1);
+        // cv::imwrite("../save_valid_pic/"+pic_name, image);
 
         metric(output_data_pin, label, confusion_matrix);
         checkRuntime(cudaFreeHost(output_data_pin));
@@ -164,10 +185,14 @@ int performance_test(const string& path, const string& img_path, const string& l
     
     cout << endl;
     printInfo(cost_time/images.size(), 6, "推理平均时长", 0);
-    printInfo(mean_iou_1a*0.75+mean_iou_1b*0.25, 4, "总作物行IOU", 0);
-    printInfo(mean_iou_2a*0.75+mean_iou_2b*0.25, 4, "左作物行IOU", 0);
-    printInfo(mean_iou_3a*0.75+mean_iou_3b*0.25, 4, "右作物行IOU", 0);
-    printInfo(mean_iou_4a*0.75+mean_iou_4b*0.25, 3, "导航线IOU", 0);
+    printInfo(mean_iou_1a, 4, "总作物行IOU", 0);
+    printInfo(mean_iou_2a, 4, "左作物行IOU", 0);
+    printInfo(mean_iou_3a, 4, "右作物行IOU", 0);
+    printInfo(mean_iou_4a, 3, "导航线IOU", 0);
+    // printInfo(mean_iou_1a*0.75+mean_iou_1b*0.25, 4, "总作物行IOU", 0);
+    // printInfo(mean_iou_2a*0.75+mean_iou_2b*0.25, 4, "左作物行IOU", 0);
+    // printInfo(mean_iou_3a*0.75+mean_iou_3b*0.25, 4, "右作物行IOU", 0);
+    // printInfo(mean_iou_4a*0.75+mean_iou_4b*0.25, 3, "导航线IOU", 0);
 
     ifs_1.close();
     ifs_2.close();

@@ -20,12 +20,7 @@ void warm_up_cuda(const Size& size){
     checkRuntime(cudaFree(pdst_warm));
 }
 
-Mat warpaffine_and_normalize_int(const Mat& image, const Size& size){  
-    /*
-       建议先阅读代码，若有疑问，可点击抖音短视频进行辅助讲解(建议1.5倍速观看)
-            思路讲解：https://v.douyin.com/NhrNnVm/
-            代码讲解: https://v.douyin.com/NhMv4nr/
-    */        
+Mat warpaffine_and_normalize_int(const Mat& image, const Size& size){         
 
     Mat output(size, CV_8UC3);
     uint8_t* psrc_device = nullptr;
@@ -52,11 +47,7 @@ Mat warpaffine_and_normalize_int(const Mat& image, const Size& size){
 }
 
 float* warpaffine_and_normalize_float(const Mat& image, const Size& size){  
-    /*
-       建议先阅读代码，若有疑问，可点击抖音短视频进行辅助讲解(建议1.5倍速观看)
-            思路讲解：https://v.douyin.com/NhrNnVm/
-            代码讲解: https://v.douyin.com/NhMv4nr/
-    */        
+      
     size_t src_size = image.cols * image.rows * 3;
     size_t dst_size = size.width * size.height * 3;
 
